@@ -11,6 +11,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\FlotillaController;
 use App\Http\Controllers\EntregaPagoController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EntregaController;
 use App\Http\Controllers\Driver\EntregaDriverController;
 
@@ -87,6 +88,7 @@ Route::middleware(['auth:sanctum', 'role:despachador'])->group(function () {
     Route::post('/client-requests', [ClientRequestController::class, 'store']);
     Route::get('/client-requests', [ClientRequestController::class, 'index']);
     Route::get('/client-requests/{id}', [ClientRequestController::class, 'show']);
+    Route::get('/dashboard/map', [DashboardController::class, 'map']);
 });
 
 /*
@@ -98,6 +100,9 @@ Route::prefix('driver')
     ->middleware(['auth:sanctum', 'role:driver'])
     ->group(function () {
 
+        // 📍 ACTUALIZAR POSICIÓN (NUEVO)
+        Route::post('/position', [DriverPositionController::class, 'store']);
+        
         // Aceptar solicitud
         Route::post(
             '/client-requests/{id}/accept',
