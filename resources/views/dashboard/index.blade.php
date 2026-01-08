@@ -77,7 +77,52 @@
         </form>
     </div>
 </div>
-<div id="map"></div>
+<div class="dashboard-body">
+
+    <!-- 🧭 PANEL LATERAL -->
+    <aside class="sidebar">
+        <h3>📦 Entregas</h3>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" data-tab="sin-asignar">Sin asignar</button>
+            <button class="tab" data-tab="en-curso">En curso</button>
+            <button class="tab" data-tab="terminadas">Terminadas</button>
+        </div>
+
+        <!-- Contenido tabs -->
+        <div class="tab-content active" id="sin-asignar">
+            <div class="card">
+                <strong>#1023</strong>
+                <p>Cliente: Farmacia XYZ</p>
+                <span class="badge gray">Sin asignar</span>
+            </div>
+        </div>
+
+        <div class="tab-content" id="en-curso">
+            <div class="card">
+                <strong>#1021</strong>
+                <p>Driver: Juan Pérez</p>
+                <span class="badge yellow">En camino</span>
+            </div>
+        </div>
+
+        <div class="tab-content" id="terminadas">
+            <div class="card">
+                <strong>#1018</strong>
+                <p>Entregada</p>
+                <span class="badge green">Terminada</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 🗺️ MAPA -->
+    <main class="map-wrapper">
+        <div id="map"></div>
+    </main>
+
+</div>
+
 
 <script src="{{ asset('js/dashboard-map.js') }}"></script>
 <script
