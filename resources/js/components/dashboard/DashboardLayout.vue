@@ -4,7 +4,7 @@
 
     <div class="dashboard-body">
       <SidebarEntregas />
-      <CreatePanel />
+      <CreatePanel @entrega-creada="onEntregaCreada" />
       <MapView />
     </div>
   </div>
@@ -15,6 +15,7 @@ import Navbar from './Navbar.vue'
 import SidebarEntregas from './SidebarEntregas.vue'
 import CreatePanel from './CreatePanel.vue'
 import MapView from './MapView.vue'
+import { entregasStore } from '@/store/entregas'
 
 export default {
   components: {
@@ -22,13 +23,16 @@ export default {
     SidebarEntregas,
     CreatePanel,
     MapView
+  },
+
+  methods: {
+    onEntregaCreada(entrega) {
+      // ✅ insertar sin repintar
+      entregasStore.items.push(entrega)
+
+      // opcional: seleccionar
+      entregasStore.selected = entrega
+    }
   }
 }
 </script>
-
-<style>
-.dashboard-body {
-  display: flex;
-  height: calc(100vh - 56px);
-}
-</style>

@@ -1,77 +1,45 @@
 <template>
-  <aside class="sidebar">
-    <h3>Envíos</h3>
-
-    <div v-if="entregasStore.loading">
-      Cargando envíos…
-    </div>
-
-    <div v-else-if="entregasStore.error">
-      {{ entregasStore.error }}
-    </div>
-
-    <div v-else>
-      <div
-        v-for="entrega in entregasStore.items"
-        :key="entrega.id"
-        class="card"
-        @click="select(entrega)"
-      >
-        <strong>{{ entrega.destinatario_nombre }}</strong>
-        <span>{{ entrega.destination_description }}</span>
-
-        <span class="badge gray">
-          {{ entrega.estado ?? 'Pendiente' }}
-        </span>
-      </div>
-    </div>
+  <aside ref="sidebar" class="sidebar">
+    <EntregaItem
+      v-for="entrega in entregasStore.items"
+      :key="entrega.id"
+      :entrega="entrega"
+    />
   </aside>
 </template>
 
 <script>
+import { ref, watch, nextTick, onMounted } from 'vue'
 import { entregasStore } from '@/store/entregas'
+import EntregaItem from '@/components/entregas/EntregaItem.vue'
 
 export default {
-  name: 'SidebarEntregas',
+  components: { EntregaItem },
 
-  data() {
+  setup() {
+    const sidebar = ref(null)
+
+    // 🔥 ESTO FALTABA
+    onMounted(() => {
+      if (entregasStore.items.length === 0) {
+        entregasStore.fetch()
+      }
+    })
+
+    watch(
+      () => entregasStore.items.length,
+      async () => {
+        await nextTick()
+        if (sidebar.value) {
+          sidebar.value.scrollTop = sidebar.value.scrollHeight
+        }
+      }
+    )
+
     return {
-      entregasStore
-    }
-  },
-
-  mounted() {
-    this.entregasStore.fetch()
-  },
-
-  methods: {
-    select(entrega) {
-      this.entregasStore.select(entrega)
+      entregasStore,
+      sidebar
     }
   }
 }
 </script>
-
-<style scoped>
-.sidebar {
-  width: 320px;
-  background: #fff;
-  border-right: 1px solid #e5e7eb;
-  padding: 15px;
-  overflow-y: auto;
-}
-
-.card {
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  padding: 10px;
-  margin-bottom: 10px;
-  font-size: 13px;
-  background: #f9fafb;
-  cursor: pointer;
-}
-
-.card:hover {
-  background: #eef2ff;
-}
-</style>

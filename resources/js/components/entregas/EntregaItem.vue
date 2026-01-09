@@ -1,15 +1,21 @@
 <template>
   <div class="entrega-item">
     <div class="top">
-      <strong>{{ entrega.cliente }}</strong>
-      <span class="estado" :class="entrega.estado">
-        {{ entrega.estado }}
-      </span>
+      <strong class="cliente">
+        {{ entrega.destinatario_nombre }}
+      </strong>
     </div>
 
-    <small>{{ entrega.direccion }}</small>
+    <div class="direccion">
+      {{ entrega.destination_description }}
+    </div>
+
+    <div class="estado" :class="entrega.estado">
+      {{ entrega.estado }}
+    </div>
   </div>
 </template>
+
 
 <script>
 export default {

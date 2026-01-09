@@ -2,12 +2,11 @@
   <aside class="create-panel" :class="{ active: uiStore.createPanelOpen }">
     <div class="create-header">
       <h3>➕ Crear Entrega</h3>
-      <button @click="uiStore.createPanelOpen = false">✕</button>
+      <button type="button" @click="uiStore.createPanelOpen = false">✕</button>
     </div>
 
-    <div class="form-wrapper">
-      <CrearEntrega />
-    </div>
+    <!-- 👇 reenviamos el evento al padre -->
+    <CrearEntrega @entrega-creada="onEntregaCreada" />
   </aside>
 </template>
 
@@ -17,8 +16,19 @@ import CrearEntrega from '../entregas/CrearEntrega.vue'
 
 export default {
   components: { CrearEntrega },
+
+  // 🔥 ESTO ES LO QUE FALTABA
+  emits: ['entrega-creada'],
+
   data() {
     return { uiStore }
+  },
+
+  methods: {
+    onEntregaCreada(entrega) {
+      // reenviar al DashboardLayout
+      this.$emit('entrega-creada', entrega)
+    }
   }
 }
 </script>

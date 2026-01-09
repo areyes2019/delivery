@@ -11,7 +11,7 @@
 
       <form method="POST" action="/logout">
         <input type="hidden" name="_token" :value="csrf">
-        <button type="submit">Salir</button>
+        <button type="submit" class="btn-logout">Salir</button>
       </form>
     </div>
   </div>
