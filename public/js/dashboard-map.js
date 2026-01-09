@@ -9,7 +9,10 @@ function initMap() {
   });
 
   loadDrivers();
-
+  // 👇 AQUÍ ES DONDE VA
+  if (typeof initPlaces === 'function') {
+      initPlaces();
+  }
   // 🔁 polling cada 15 segundos
   pollingInterval = setInterval(loadDrivers, 15000);
 }

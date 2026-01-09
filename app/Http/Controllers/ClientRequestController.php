@@ -21,7 +21,9 @@ class ClientRequestController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    // Crear solicitud
+    /**
+     * ➕ Crear solicitud de entrega
+     */
     public function store(CreateClientRequest $request): JsonResponse
     {
         $user = $request->user();
@@ -37,24 +39,39 @@ class ClientRequestController extends Controller
 
         $clientRequest = ClientRequest::findOrFail($id);
 
+        // 👉 Payload listo para dashboard
         return response()->json([
-            'id'     => $clientRequest->id,
-            'status' => $clientRequest->status,
+            'message' => 'Entrega creada correctamente',
+            'data' => [
+                'id' => $clientRequest->id,
+                'status' => $clientRequest->status,
+                'destinatario' => $clientRequest->destinatario_nombre,
+                'destination_description' => $clientRequest->destination_description,
+                'created_at' => $clientRequest->created_at,
+            ],
         ], 201);
     }
 
-    // Listar solicitudes
-    public function index(Request $request)
+    /**
+     * 📋 Listar solicitudes del cliente
+     */
+    public function index(Request $request): JsonResponse
     {
-        return ClientRequest::deCliente($request->user()->cliente_id)
+        $requests = ClientRequest::deCliente($request->user()->cliente_id)
             ->orderByDesc('created_at')
             ->get();
+
+        return response()->json($requests);
     }
 
-    // Ver una solicitud
-    public function show(int $id)
+    /**
+     * 👁️ Ver una solicitud
+     */
+    public function show(int $id): JsonResponse
     {
-        return ClientRequest::findOrFail($id);
+        return response()->json(
+            ClientRequest::findOrFail($id)
+        );
     }
 
     /*
@@ -63,7 +80,9 @@ class ClientRequestController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    // ✅ Aceptar solicitud
+    /**
+     * ✅ Aceptar solicitud
+     */
     public function accept(Request $request, int $id): JsonResponse
     {
         $driver = $request->user();
@@ -82,14 +101,16 @@ class ClientRequestController extends Controller
 
         return response()->json([
             'message' => 'Solicitud aceptada',
-            'client_request' => [
-                'id'     => $clientRequest->id,
+            'data' => [
+                'id' => $clientRequest->id,
                 'status' => $clientRequest->status,
             ],
         ]);
     }
 
-    // 🚀 Iniciar entrega → EN_CAMINO
+    /**
+     * 🚀 Iniciar entrega → EN_CAMINO
+     */
     public function start(Request $request, int $id): JsonResponse
     {
         $driver = $request->user();
@@ -108,15 +129,17 @@ class ClientRequestController extends Controller
 
         return response()->json([
             'message' => 'Entrega iniciada',
-            'client_request' => [
-                'id'         => $clientRequest->id,
-                'status'     => $clientRequest->status,
+            'data' => [
+                'id' => $clientRequest->id,
+                'status' => $clientRequest->status,
                 'started_at' => $clientRequest->started_at,
             ],
         ]);
     }
 
-    // 💰 MARCAR COMO PAGADA → PAGADA
+    /**
+     * 💰 Marcar como pagada → PAGADA
+     */
     public function pay(Request $request, int $id): JsonResponse
     {
         $driver = $request->user();
@@ -135,14 +158,17 @@ class ClientRequestController extends Controller
 
         return response()->json([
             'message' => 'Entrega marcada como pagada',
-            'client_request' => [
-                'id'      => $clientRequest->id,
-                'status'  => $clientRequest->status,
+            'data' => [
+                'id' => $clientRequest->id,
+                'status' => $clientRequest->status,
                 'paid_at' => $clientRequest->paid_at,
             ],
         ]);
     }
-    // 🏁 MARCAR COMO ENTREGADA
+
+    /**
+     * 🏁 Marcar como entregada → ENTREGADA
+     */
     public function complete(Request $request, int $id): JsonResponse
     {
         $driver = $request->user();
@@ -161,12 +187,11 @@ class ClientRequestController extends Controller
 
         return response()->json([
             'message' => 'Entrega finalizada',
-            'client_request' => [
-                'id'           => $clientRequest->id,
-                'status'       => $clientRequest->status,
+            'data' => [
+                'id' => $clientRequest->id,
+                'status' => $clientRequest->status,
                 'delivered_at' => $clientRequest->delivered_at,
             ],
         ]);
     }
-
 }

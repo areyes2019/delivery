@@ -8,6 +8,6 @@ class UserHasRole extends Pivot
 {
     protected $table = "user_has_roles";
     protected $fillable = ['id_user', 'id_rol'];
-    protected $incrementing = false;
-    protected $timesmtamps = false;
+    public $incrementing = false;
+    public $timesmtamps = false;
 }
