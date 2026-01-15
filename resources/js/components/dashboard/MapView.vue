@@ -1,85 +1,140 @@
 <template>
-  <main class="map-wrapper">
-    <div ref="mapEl" class="map"></div>
-  </main>
+  <div class="col-md-8 mb-0 p-0">
+    <div class="panel-map">
+      <div ref="mapEl" class="map"></div>
+    </div>
+  </div>
 </template>
 
 <script>
-import { entregasStore } from '@/store/entregas'
+//IMPORTACION DEL ARCHIVO GOOGLEMAPS
+import { waitForGoogleMaps } from '@/utils/googleMaps'
 
 export default {
+  name: 'MapView',
+
+  props: {
+    entrega: {
+      type: Object,
+      default: null
+    },
+    driverPosition: {
+      type: Object,
+      default: null
+    }
+  },
+
   data() {
     return {
       map: null,
-      checkInterval: null,
-      entregasStore
+      directionsService: null,
+      directionsRenderer: null,
     }
   },
 
   mounted() {
-    this.waitForGoogleMaps()
-  },
-
-  beforeUnmount() {
-    if (this.checkInterval) {
-      clearInterval(this.checkInterval)
-    }
+    this.init()
   },
 
   methods: {
-    waitForGoogleMaps() {
-      this.checkInterval = setInterval(() => {
-        if (window.google && window.google.maps) {
-          clearInterval(this.checkInterval)
-          this.initMap()
-        }
-      }, 100)
+    async init() {
+      try {
+        await waitForGoogleMaps()
+        this.initMap()
+      } catch (e) {
+        console.error('Error cargando Google Maps:', e)
+      }
     },
-
+    //AQUI INICIAMOS EL MAPA DE GOOGLE
     initMap() {
+      const center = this.entrega?.pickup_position
+        ? {
+            lat: Number(this.entrega.pickup_position.lat),
+            lng: Number(this.entrega.pickup_position.lng),
+          }
+        : this.getFallbackLocation()
+
       this.map = new google.maps.Map(this.$refs.mapEl, {
-        center: { lat: 20.5931, lng: -100.3925 }, // Celaya
-        zoom: 13
+        center,
+        zoom: 13,
       })
 
-      // 🔥 Forzar redibujado
+      this.directionsService = new google.maps.DirectionsService()
+      this.directionsRenderer = new google.maps.DirectionsRenderer()
+      this.directionsRenderer.setMap(this.map)
+
       setTimeout(() => {
         google.maps.event.trigger(this.map, 'resize')
-
-        // 🔥 SI YA HAY ENTREGA SELECCIONADA → CENTRAR
-        if (this.entregasStore.selected) {
-          this.centerOnEntrega(this.entregasStore.selected)
-        }
       }, 200)
+
+      if (this.entrega && this.driverPosition) {
+        this.drawRoute()
+      }
     },
 
-    centerOnEntrega(entrega) {
-      if (!entrega?.pickup_position) return
+    getFallbackLocation() {
+      return { lat: 20.5279, lng: -100.8123 } // Celaya
+    },
+    drawRoute() {
+      if (!this.map) return
+      if (!this.entrega?.pickup_position) return
+      if (!this.driverPosition) return
 
-      const lat = Number(entrega.pickup_position.lat)
-      const lng = Number(entrega.pickup_position.lng)
+      const origin = {
+        lat: Number(this.driverPosition.lat),
+        lng: Number(this.driverPosition.lng),
+      }
 
-      if (isNaN(lat) || isNaN(lng)) return
+      const destination = {
+        lat: Number(this.entrega.pickup_position.lat),
+        lng: Number(this.entrega.pickup_position.lng),
+      }
 
-      this.map.panTo({ lat, lng })
-      this.map.setZoom(15)
-    }
+      if (
+        isNaN(origin.lat) || isNaN(origin.lng) ||
+        isNaN(destination.lat) || isNaN(destination.lng)
+      ) return
+
+      this.directionsService.route(
+        {
+          origin,
+          destination,
+          travelMode: google.maps.TravelMode.DRIVING,
+        },
+        (result, status) => {
+          if (status === 'OK') {
+            this.directionsRenderer.setDirections(result)
+          }
+        }
+      )
+    },
+
   },
-
   watch: {
-    // 👂 cuando cambie la entrega seleccionada
-    'entregasStore.selected'(entrega) {
-      if (!this.map || !entrega) return
-      this.centerOnEntrega(entrega)
+    entrega: {
+      deep: true,
+      handler() {
+        if (!this.map) return
+        this.drawRoute()
+      }
+    },
+
+    driverPosition: {
+      deep: true,
+      handler() {
+        if (!this.map) return
+        this.drawRoute()
+      }
     }
   }
 }
 </script>
 
 <style scoped>
-.map-wrapper {
-  flex: 1;
+.panel-map {
   position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 .map {

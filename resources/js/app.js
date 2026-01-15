@@ -1,13 +1,17 @@
 import '../css/dashboard.css'
-import './bootstrap'
 import axios from 'axios'
 import { createApp } from 'vue'
+
+// Bootstrap 5
+import 'bootstrap/dist/css/bootstrap.min.css'
+import 'bootstrap/dist/js/bootstrap.bundle.min.js'
+import 'bootstrap-icons/font/bootstrap-icons.css'
 
 import DashboardLayout from './components/dashboard/DashboardLayout.vue'
 
 // 🌐 Axios global
 window.axios = axios
-
+axios.defaults.baseURL = '/api'
 axios.defaults.withCredentials = true
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
 
@@ -28,8 +32,5 @@ axios.interceptors.response.use(
   }
 )
 
-// 🚀 UNA SOLA APP VUE
-const app = document.getElementById('dashboard-app')
-if (app) {
-  createApp(DashboardLayout).mount('#dashboard-app')
-}
+// 🚀 UNA SOLA APP, ID NORMAL
+createApp(DashboardLayout).mount('#app')

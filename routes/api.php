@@ -11,10 +11,11 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\FlotillaController;
 use App\Http\Controllers\EntregaPagoController;
+use App\Http\Controllers\DriverTestController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EntregaController;
 use App\Http\Controllers\Driver\EntregaDriverController;
-
+use App\Http\Controllers\Driver\ClientRequestDriverController;
 /*
 |--------------------------------------------------------------------------
 | AUTH
@@ -120,17 +121,23 @@ Route::prefix('driver')
             '/client-requests/{id}/pay',
             [ClientRequestController::class, 'pay']
         );
-
-        // (legacy / otros módulos)
-        Route::post('/entregas/estado', [EntregaDriverController::class, 'changeEstado']);
-
-        Route::post('/entrega-pagos', [EntregaPagoController::class, 'store']);
-        Route::post('/entrega-pagos/{pago}/cobrar', [EntregaPagoController::class, 'cobrar']);
-        Route::post(
-            '/client-requests/{id}/complete',
-            [ClientRequestController::class, 'complete']
+        Route::get(
+            '/client-requests',
+            [ClientRequestController::class, 'available']
         );
+        // (legacy / otros módulos)
+        //Route::post('/entregas/estado', [EntregaDriverController::class, 'changeEstado']);
+        
+        //TABLERO DE DRIVER PROVISIONAL
+        /*Route::get('/tablero', [EntregaDriverController::class, 'tablero']);
+        Route::get('/entrega-actual', [EntregaDriverController::class, 'actual']);
+
+        Route::post('/entregas/{id}/aceptar', [EntregaDriverController::class, 'aceptar']);
+        Route::post('/entregas/{id}/iniciar', [EntregaDriverController::class, 'iniciar']);
+        Route::post('/entregas/{id}/cobrar', [EntregaDriverController::class, 'cobrar']);
+        Route::post('/entregas/{id}/entregar', [EntregaDriverController::class, 'entregar']);*/
 });
+
 
 /*
 |--------------------------------------------------------------------------

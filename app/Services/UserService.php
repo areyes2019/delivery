@@ -1,5 +1,5 @@
 <?php
-
+//UserService.php
 namespace App\Services;
 
 use App\Models\User;
@@ -213,5 +213,31 @@ class UserService
 
         return $driver;
     }
+    /**
+     * 📝 Registro público
+     * Usuario pendiente de aprobación
+     */
+    public function registerPublic(array $data): User
+    {
+        if (User::where('email', $data['email'])->exists()) {
+            throw new HttpException(422, 'El email ya está en uso');
+        }
+
+        return User::create([
+            'name'      => $data['name'],
+            'lastname'  => $data['lastname'],
+            'email'     => $data['email'],
+            'phone'     => $data['phone'] ?? null,
+            'password'  => Hash::make($data['password']),
+
+            'rol'       => 'pendiente',
+            'activo'    => false,
+
+            'cliente_id'=> null,
+            'parent_id' => null,
+            'flotilla_id'=> null,
+        ]);
+    }
+
 
 }

@@ -3,64 +3,114 @@
 namespace App\Http\Controllers\Driver;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Entrega\ChangeEntregaEstadoRequest;
-use App\Models\Entrega;
-use App\Services\EntregaService;
-use Illuminate\Http\JsonResponse;
+use App\Models\ClientRequest;
+use App\Enums\EntregaStatus;
 use Illuminate\Http\Request;
-use App\Enums\EntregaEstado;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+
 class EntregaDriverController extends Controller
 {
-    public function __construct(
-        private EntregaService $entregaService
-    ) {}
-
     /**
-     * 🚗 Driver acepta la entrega
-     * CREADA → ASIGNADA
+     * 📋 TABLERO DEL DRIVER
+     * Solicitudes disponibles (CREATED)
      */
-    public function accept(int $id, Request $request): JsonResponse
+    public function tablero(Request $request): JsonResponse
     {
-        $driver = $request->user();
+        $entregas = ClientRequest::query()
+            ->where('status', EntregaStatus::CREATED->value)
+            ->whereNull('driver_id')
+            ->orderBy('created_at')
+            ->get();
 
-        $entrega = Entrega::findOrFail($id);
-
-        $entrega = $this->entregaService->acceptEntrega(
-            $entrega,
-            $driver
-        );
-
-        return response()->json([
-            'message' => 'Entrega aceptada',
-            'entrega' => $entrega,
-        ]);
+        return response()->json($entregas);
     }
 
     /**
-     * 🔄 Driver cambia estado
-     * ASIGNADA → EN_CAMINO → ENTREGADA
+     * 🚚 ENTREGA ACTIVA DEL DRIVER
      */
-    public function changeEstado(Request $request)
+    public function actual(Request $request): JsonResponse
     {
-        $estado = EntregaEstado::tryFrom($request->estado);
+        $entrega = ClientRequest::where('driver_id', $request->user()->id)
+            ->whereIn('status', [
+                EntregaStatus::ACCEPTED->value,
+                EntregaStatus::PICKED_UP->value,
+                EntregaStatus::PAID->value,
+            ])
+            ->first();
 
-        if (!$estado) {
-            throw new HttpException(422, 'Estado inválido');
-        }
+        return response()->json($entrega);
+    }
 
-        $entrega = $this->entregaService->changeEstado(
-            $request->entrega_id,
-            $estado, // ENUM ✅
-            $request->user()
-        );
+    /**
+     * ✅ ACEPTAR ENTREGA
+     * CREATED → ACCEPTED
+     */
+    public function aceptar(int $id, Request $request): JsonResponse
+    {
+        $driver = $request->user();
 
-        return response()->json([
-            'message' => 'Estado actualizado',
-            'entrega' => [
-                'id'     => $entrega->id,
-                'estado' => $entrega->estado->value,
-            ],
-        ]);
+        $entrega = DB::transaction(function () use ($id, $driver) {
+            $entrega = ClientRequest::lockForUpdate()->findOrFail($id);
+
+            if (! $entrega->puedeSerAceptada()) {
+                throw new HttpException(409, 'La solicitud no puede ser aceptada');
+            }
+
+            $activa = ClientRequest::where('driver_id', $driver->id)
+                ->whereIn('status', [
+                    EntregaStatus::ACCEPTED->value,
+                    EntregaStatus::PICKED_UP->value,
+                    EntregaStatus::PAID->value,
+                ])
+                ->exists();
+
+            if ($activa) {
+                throw new HttpException(409, 'Ya tienes una entrega activa');
+            }
+
+            $entrega->marcarComoAceptada($driver);
+
+            return $entrega;
+        });
+
+        return response()->json($entrega);
+    }
+
+    /**
+     * ▶️ INICIAR ENTREGA
+     * ACCEPTED → PICKED_UP
+     */
+    public function iniciar(int $id, Request $request): JsonResponse
+    {
+        $entrega = ClientRequest::findOrFail($id);
+        $entrega->iniciarEntrega($request->user());
+
+        return response()->json($entrega);
+    }
+
+    /**
+     * 💰 COBRAR
+     * PICKED_UP → PAID
+     */
+    public function cobrar(int $id, Request $request): JsonResponse
+    {
+        $entrega = ClientRequest::findOrFail($id);
+        $entrega->marcarComoPagada();
+
+        return response()->json($entrega);
+    }
+
+    /**
+     * 📦 ENTREGAR
+     * PAID → DELIVERED
+     */
+    public function entregar(int $id, Request $request): JsonResponse
+    {
+        $entrega = ClientRequest::findOrFail($id);
+        $entrega->marcarComoEntregada();
+
+        return response()->json($entrega);
     }
 }

@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\ClientRequestController;
+use App\Http\Controllers\DriverTestController;
 use App\Http\Controllers\Web\Auth\LoginController;
 use App\Http\Controllers\Web\DashboardController;
 use Illuminate\Support\Facades\Auth;
@@ -56,3 +57,16 @@ Route::middleware(['auth:sanctum', 'cliente'])
         Route::post('/entregas', [ClientRequestController::class, 'store']);
         Route::get('/entregas/{id}', [ClientRequestController::class, 'show']);
     });
+
+/*SOLO PARA PRUEBAS*/
+Route::middleware(['auth', 'role:driver'])->group(function () {
+
+    Route::get('/driver', [DriverTestController::class, 'index']);
+    Route::get('/driver/{id}', [DriverTestController::class, 'show']);
+
+    Route::post('/driver/{id}/accept', [DriverTestController::class, 'accept']);
+    Route::post('/driver/{id}/start', [DriverTestController::class, 'start']);
+    Route::post('/driver/{id}/pay', [DriverTestController::class, 'pay']);
+    Route::post('/driver/{id}/complete', [DriverTestController::class, 'complete']);
+
+});

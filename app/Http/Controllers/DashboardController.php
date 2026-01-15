@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    
     /**
      * 🗺️ Mapa operativo del dashboard
      */

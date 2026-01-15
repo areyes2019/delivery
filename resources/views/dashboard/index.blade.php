@@ -17,6 +17,6 @@
   </script>
 </head>
 <body>
-  <div id="dashboard-app"></div>
+  <div id="app"></div>
 </body>
 </html>

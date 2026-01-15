@@ -194,4 +194,7 @@ class ClientRequestController extends Controller
             ],
         ]);
     }
+    public function available(){
+        return "Saludos";
+    }
 }

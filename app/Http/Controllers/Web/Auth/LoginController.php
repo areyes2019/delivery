@@ -29,7 +29,7 @@ class LoginController extends Controller
         $request->session()->regenerate();
 
         // 🔐 Solo ciertos roles pueden entrar
-        if (!in_array($request->user()->rol, ['despachador', 'admin_cliente', 'superadmin'])) {
+        if (!in_array($request->user()->rol, ['despachador', 'admin_cliente', 'superadmin','driver'])) {
             Auth::logout();
             return back()->withErrors([
                 'email' => 'No tienes acceso al dashboard',

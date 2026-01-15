@@ -10,7 +10,7 @@ export const entregasStore = reactive({
   async fetch() {
     this.loading = true
     try {
-      const res = await axios.get('/api/client-requests')
+      const res = await axios.get('client-requests')
 
       this.items = (res.data.data ?? res.data).map(e => ({
         id: e.id,
