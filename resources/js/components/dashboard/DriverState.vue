@@ -9,7 +9,11 @@
         class="text-decoration-none text-dark"
       >
 
-        <div class="card">
+        <div
+          v-for="item in envios"
+          :key="item.id"
+          class="card"
+        >
           <div class="card-body">
 
             <!-- Repartidor -->
@@ -22,24 +26,25 @@
               >
               <div>
                 <strong>Repartidor</strong><br>
-                <small class="text-muted">En servicio</small>
+                <strong>{{item.driver?.name || 'Sin Asignar'}}</strong>
+                <small class="text-muted"></small>
               </div>
             </div>
 
-            <h6>Cliente</h6>
-            <p class="mb-1">Carlos Gómez</p>
+            <strong>Recibe:</strong>
+            <p class="mb-0">{{item.destinatario_nombre}}</p>
 
-            <h6>Dirección</h6>
-            <p class="mb-2">Calle Juárez 89</p>
+            <strong>Dirección</strong>
+            <p class="mb-2">{{ item.pickup_description }}</p>
 
-            <span class="badge bg-success mb-2">Entregado</span>
+            <span class="badge bg-success mb-2">{{statusLabel(item.status)}}</span>
 
             <div class="progress mt-2" style="height:6px;">
               <div class="progress-bar bg-success" style="width:100%"></div>
             </div>
 
             <small class="text-success mt-2 d-block">
-              ✔ Repartidor llegó al destino
+              Progreso
             </small>
 
           </div>
@@ -96,6 +101,38 @@
 
 <script>
 export default {
-  name: 'DriverState'
+  name: 'DriverState',
+  props:{
+    envios:{
+      type:Array,
+      default:()=>[]
+    }
+  },
+  methods:{
+    statusLabel(status) {
+      switch (status) {
+        case 'ACCEPTED':
+          return 'Asignado'
+        case 'PICKED_UP':
+          return 'En ruta'
+        case 'PAID':
+          return 'Pagado'
+        default:
+          return status
+      }
+    },
+    progressValue(status) {
+      switch (status) {
+        case 'ACCEPTED':
+          return 33
+        case 'PICKED_UP':
+          return 66
+        case 'PAID':
+          return 90
+        default:
+          return 0
+      }
+    }
+  }
 }
 </script>

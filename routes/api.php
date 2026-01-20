@@ -90,6 +90,11 @@ Route::middleware(['auth:sanctum', 'role:despachador'])->group(function () {
     Route::get('/client-requests', [ClientRequestController::class, 'index']);
     Route::get('/client-requests/{id}', [ClientRequestController::class, 'show']);
     Route::get('/dashboard/map', [DashboardController::class, 'map']);
+    // 🔥 NUEVA RUTA DASHBOARD (CON JOIN)
+    Route::get(
+        '/dashboard/client-requests',
+        [ClientRequestController::class, 'dashboard']
+    );
 });
 
 /*

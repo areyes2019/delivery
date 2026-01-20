@@ -11,13 +11,15 @@
         <!-- DESPACHADOR -->
         <SidebarForm
           :open="sidebarOpen"
-          :pendientes="pendientes"
+          :solicitudes="colaSolicitudes"
           :enRuta="enRuta"
           @close="sidebarOpen = false"
           @entrega-creada="onEntregaCreada"
         />
         <MapView />
-        <DriverState/> 
+        <DriverState
+          :envios="solicitudesEnProceso"
+        /> 
       </div>
     </div>
   </div>
@@ -79,6 +81,18 @@ export default {
       return this.solicitudes.filter(
         s => ['ACCEPTED', 'PICKED_UP', 'PAID'].includes(s.status)
       )
+    },
+    colaSolicitudes() {
+      return this.solicitudes.filter(s =>
+        s.status &&
+        s.status.trim().toUpperCase() === 'CREATED'
+      )
+    },
+    solicitudesEnProceso(){
+      return this.solicitudes.filter(s =>
+        ['ACCEPTED', 'PICKED_UP', 'PAID']
+          .includes(s.status?.trim().toUpperCase())
+      )
     }
   },
 
@@ -102,7 +116,7 @@ export default {
       this.cargandoSolicitudes = true
 
       try {
-        const res = await axios.get('/client-requests')
+        const res = await axios.get('dashboard/client-requests')
         this.solicitudes = res.data
       } catch (e) {
         console.error('Error cargando solicitudes', e)

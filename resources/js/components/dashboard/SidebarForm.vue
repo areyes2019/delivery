@@ -3,120 +3,57 @@
   <div class="col-md-2 p-0">
     <div class="panel">
 
-      <!-- 🔹 TABS -->
-      <ul class="nav nav-tabs nav-fill">
-        <li class="nav-item">
-          <button
-            type="button"
-            class="nav-link"
-            :class="{ active: activeTab === 'pendientes' }"
-            @click="activeTab = 'pendientes'"
-          >
-            Pendientes
-          </button>
-        </li>
-
-        <li class="nav-item">
-          <button
-            type="button"
-            class="nav-link"
-            :class="{ active: activeTab === 'ruta' }"
-            @click="activeTab = 'ruta'"
-          >
-            En ruta
-          </button>
-        </li>
-      </ul>
+      <!-- 🔹 HEADER -->
+      <div class="p-2 border-bottom">
+        <h6 class="m-0 text-center fw-bold">
+          Cola de solicitudes
+        </h6>
+      </div>
 
       <!-- 🔹 LISTADO -->
       <div class="p-2">
 
-        <!-- 🟡 PENDIENTES -->
-        <div v-show="activeTab === 'pendientes'">
-          <a
-            v-for="item in pendientes"
-            :key="item.id"
-            href="#"
-            class="text-decoration-none"
-          >
-            <div class="card mb-2 rounded-0">
-              <div class="card-body">
-                <p class="m-0"><strong>Cliente</strong></p>
-                <p class="m-0">{{ item.destinatario_nombre }}</p>
+        <a
+          v-for="item in solicitudes"
+          :key="item.id"
+          href="#"
+          class="text-decoration-none"
+        >
+          <div class="card mb-2 rounded-0">
+            <div class="card-body">
+              <p class="m-0"><strong>Cliente</strong></p>
+              <p class="m-0">{{ item.destinatario_nombre }}</p>
 
-                <p class="m-0"><strong>Dirección</strong></p>
-                <p>{{ shortAddress(item.pickup_description) }}</p>
+              <p class="m-0"><strong>Dirección</strong></p>
+              <p class="m-0">{{ shortAddress(item.pickup_description) }}</p>
 
-                <span class="badge bg-warning text-dark">
-                  {{ statusLabel(item.status) }}
-                </span>
-              </div>
+              <span class="badge bg-warning text-dark">
+                Pendiente
+              </span>
             </div>
-          </a>
-
-          <div
-            v-if="!pendientes.length"
-            class="text-muted text-center py-3"
-          >
-            No hay solicitudes pendientes
           </div>
-        </div>
+        </a>
 
-        <!-- 🔵 EN RUTA -->
-        <div v-show="activeTab === 'ruta'">
-          <a
-            v-for="item in enRuta"
-            :key="item.id"
-            href="#"
-            class="text-decoration-none"
-          >
-            <div class="card mb-2 rounded-0">
-              <div class="card-body">
-                <p class="m-0">Cliente</p>
-                <p>{{ item.destinatario_nombre }}</p>
-
-                <h6>Dirección</h6>
-                <p>{{ shortAddress(item.pickup_description) }}</p>
-
-                <span class="badge bg-primary">
-                  {{ statusLabel(item.status) }}
-                </span>
-              </div>
-            </div>
-          </a>
-
-          <div
-            v-if="!enRuta.length"
-            class="text-muted text-center py-3"
-          >
-            No hay entregas en ruta
-          </div>
+        <div
+          v-if="!solicitudes.length"
+          class="text-muted text-center py-3"
+        >
+          No hay solicitudes en cola
         </div>
 
       </div>
     </div>
   </div>
-  <!-- FIN LISTADO -->
 
-  <!-- FORMULARIO (COMPONENTE REAL) -->
+  <!-- FORMULARIO -->
   <CrearEntrega
     :open="open"
     @close="$emit('close')"
     @entrega-creada="$emit('entrega-creada', $event)"
   />
 </template>
-
 <script>
 import CrearEntrega from './CrearEntrega.vue'
-
-const STATUS = {
-  CREATED: 'CREATED',
-  ACCEPTED: 'ACCEPTED',
-  PICKED_UP: 'PICKED_UP',
-  PAID: 'PAID',
-  DELIVERED: 'DELIVERED',
-  CANCELED: 'CANCELED'
-}
 
 export default {
   name: 'SidebarForm',
@@ -124,15 +61,8 @@ export default {
   components: { CrearEntrega },
 
   props: {
-    open: {
-      type: Boolean,
-      default: false
-    },
-    pendientes: {
-      type: Array,
-      default: () => []
-    },
-    enRuta: {
+    open: Boolean,
+    solicitudes: {
       type: Array,
       default: () => []
     }
@@ -140,41 +70,11 @@ export default {
 
   emits: ['close', 'entrega-creada'],
 
-  data() {
-    return {
-      activeTab: 'pendientes'
-    }
-  },
-
   methods: {
-    statusLabel(status) {
-      switch (status) {
-        case STATUS.CREATED:
-          return 'Pendiente'
-        case STATUS.ACCEPTED:
-          return 'Asignada'
-        case STATUS.PICKED_UP:
-          return 'En ruta'
-        case STATUS.PAID:
-          return 'Pagada'
-        case STATUS.DELIVERED:
-          return 'Entregada'
-        case STATUS.CANCELED:
-          return 'Cancelada'
-        default:
-          return status
-      }
-    },
     shortAddress(address) {
       if (!address) return ''
-
-      // divide por comas
-      const parts = address.split(',')
-
-      // calle + colonia (máx 2 partes)
-      return parts.slice(0, 2).join(',').trim()
-    },
-
+      return address.split(',').slice(0, 2).join(',').trim()
+    }
   }
 }
 </script>

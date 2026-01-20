@@ -16,14 +16,11 @@ class ClientRequestController extends Controller
     ) {}
 
     /*
-    |--------------------------------------------------------------------------
+    |------------------------------------------------------------------
     | DESPACHADOR
-    |--------------------------------------------------------------------------
+    |------------------------------------------------------------------
     */
 
-    /**
-     * ➕ Crear solicitud de entrega
-     */
     public function store(CreateClientRequest $request): JsonResponse
     {
         $user = $request->user();
@@ -39,7 +36,6 @@ class ClientRequestController extends Controller
 
         $clientRequest = ClientRequest::findOrFail($id);
 
-        // 👉 Payload listo para dashboard
         return response()->json([
             'message' => 'Entrega creada correctamente',
             'data' => [
@@ -53,11 +49,14 @@ class ClientRequestController extends Controller
     }
 
     /**
-     * 📋 Listar solicitudes del cliente
+     * 📋 Dashboard general (sidebar + driver state)
      */
-    public function index(Request $request): JsonResponse
+    public function dashboard(Request $request): JsonResponse
     {
-        $requests = ClientRequest::deCliente($request->user()->cliente_id)
+        $user = $request->user();
+
+        $requests = ClientRequest::with('driver:id,name')
+            ->deCliente($user->cliente_id)
             ->orderByDesc('created_at')
             ->get();
 
@@ -65,24 +64,27 @@ class ClientRequestController extends Controller
     }
 
     /**
-     * 👁️ Ver una solicitud
+     * 🚚 Envíos en proceso (DriverState)
      */
-    public function show(int $id): JsonResponse
+    public function enProceso(Request $request): JsonResponse
     {
-        return response()->json(
-            ClientRequest::findOrFail($id)
-        );
+        $user = $request->user();
+
+        $requests = ClientRequest::with('driver:id,name')
+            ->deCliente($user->cliente_id)
+            ->enProceso()
+            ->orderByDesc('created_at')
+            ->get();
+
+        return response()->json($requests);
     }
 
     /*
-    |--------------------------------------------------------------------------
+    |------------------------------------------------------------------
     | DRIVER
-    |--------------------------------------------------------------------------
+    |------------------------------------------------------------------
     */
 
-    /**
-     * ✅ Aceptar solicitud
-     */
     public function accept(Request $request, int $id): JsonResponse
     {
         $driver = $request->user();
@@ -108,9 +110,6 @@ class ClientRequestController extends Controller
         ]);
     }
 
-    /**
-     * 🚀 Iniciar entrega → EN_CAMINO
-     */
     public function start(Request $request, int $id): JsonResponse
     {
         $driver = $request->user();
@@ -137,9 +136,6 @@ class ClientRequestController extends Controller
         ]);
     }
 
-    /**
-     * 💰 Marcar como pagada → PAGADA
-     */
     public function pay(Request $request, int $id): JsonResponse
     {
         $driver = $request->user();
@@ -166,9 +162,6 @@ class ClientRequestController extends Controller
         ]);
     }
 
-    /**
-     * 🏁 Marcar como entregada → ENTREGADA
-     */
     public function complete(Request $request, int $id): JsonResponse
     {
         $driver = $request->user();
@@ -193,8 +186,5 @@ class ClientRequestController extends Controller
                 'delivered_at' => $clientRequest->delivered_at,
             ],
         ]);
-    }
-    public function available(){
-        return "Saludos";
     }
 }

@@ -10,7 +10,6 @@ use App\Models\User;
 use App\Models\EntregaPago;
 use App\Enums\EntregaStatus;
 
-
 class ClientRequest extends Model
 {
     protected $table = 'client_requests';
@@ -85,6 +84,15 @@ class ClientRequest extends Model
         return $query->where('status', EntregaStatus::CREATED->value);
     }
 
+    public function scopeEnProceso($query)
+    {
+        return $query->whereIn('status', [
+            EntregaStatus::ACCEPTED->value,
+            EntregaStatus::PICKED_UP->value,
+            EntregaStatus::PAID->value,
+        ]);
+    }
+
     /* -----------------------------------------------------------------
      | Relaciones
      |-----------------------------------------------------------------*/
@@ -118,8 +126,6 @@ class ClientRequest extends Model
      | Máquina de estados (FUENTE DE VERDAD)
      |-----------------------------------------------------------------*/
 
-    /* ---------- CREATED → ACCEPTED ---------- */
-
     public function puedeSerAceptada(): bool
     {
         return $this->status === EntregaStatus::CREATED->value;
@@ -137,8 +143,6 @@ class ClientRequest extends Model
             'flotilla_id' => $driver->flotilla_id,
         ]);
     }
-
-    /* ---------- ACCEPTED → PICKED_UP ---------- */
 
     public function puedeIniciar(): bool
     {
@@ -161,8 +165,6 @@ class ClientRequest extends Model
         ]);
     }
 
-    /* ---------- PICKED_UP → PAID ---------- */
-
     public function puedeMarcarPagada(): bool
     {
         return $this->status === EntregaStatus::PICKED_UP->value;
@@ -179,8 +181,6 @@ class ClientRequest extends Model
             'paid_at' => Carbon::now(),
         ]);
     }
-
-    /* ---------- PAID / PICKED_UP → DELIVERED ---------- */
 
     public function puedeFinalizar(): bool
     {
@@ -201,8 +201,6 @@ class ClientRequest extends Model
             'delivered_at' => Carbon::now(),
         ]);
     }
-
-    /* ---------- CANCELACIÓN ---------- */
 
     public function cancelar(): void
     {
