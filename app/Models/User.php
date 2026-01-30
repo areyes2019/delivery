@@ -151,4 +151,10 @@ class User extends Authenticatable
     {
         return $query->where('activo', true);
     }
+
+    public function isDispatcher(): bool
+    {
+        return $this->role === 'dispatcher';
+    }
+
 }

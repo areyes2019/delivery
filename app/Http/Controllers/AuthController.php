@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\User\CreateUserRequest;
 use App\Http\Requests\User\LoginRequest;
 use App\Services\UserService;
+use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
@@ -16,28 +17,34 @@ class AuthController extends Controller
     /**
      * 🔐 LOGIN API (Postman / Flutter)
      */
-    public function login(LoginRequest $request): JsonResponse
+    public function login(Request $request)
     {
-        $data = $request->validated();
+        $request->validate([
+            'phone' => 'required',
+            'password' => 'required',
+        ]);
 
-        $user = User::where('email', $data['email'])->first();
+        $phone = preg_replace('/\D/', '', $request->phone); // solo números
 
-        if (! $user || ! Hash::check($data['password'], $user->password)) {
-            return response()->json(['message' => 'Credenciales incorrectas'], 401);
+        $user = User::where('phone', $phone)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'message' => 'Credenciales incorrectas'
+            ], 401);
         }
 
-        if (! $user->activo) {
-            return response()->json(['message' => 'Usuario inactivo'], 403);
+        if (!$user->activo) {
+            return response()->json([
+                'message' => 'Usuario inactivo'
+            ], 403);
         }
+
+        $token = $user->createToken('mobile')->plainTextToken;
 
         return response()->json([
-            'token' => $user->createToken('api-token')->plainTextToken,
-            'user'  => [
-                'id'    => $user->id,
-                'rol'   => $user->rol,
-                'email'=> $user->email,
-                'name' => $user->name,
-            ],
+            'token' => $token,
+            'user' => $user,
         ]);
     }
 

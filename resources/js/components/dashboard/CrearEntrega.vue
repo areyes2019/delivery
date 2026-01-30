@@ -200,7 +200,9 @@ export default {
           observaciones: this.form.observaciones
         }
 
-        const res = await axios.post('/client-requests', payload)
+        const res = await axios.post('/client-requests', payload, {
+          baseURL: '/'
+        })
 
         this.$emit('entrega-creada', res.data.data)
         this.$emit('close')
@@ -211,6 +213,30 @@ export default {
         this.loading = false
       }
     }
+  },
+  guardarRemitente() {
+    // Validación defensiva
+    if (!this.form.remitente_nombre) return
+
+    const key = 'remitentes_recientes'
+    const existentes = JSON.parse(localStorage.getItem(key) || '[]')
+
+    const nuevo = {
+      nombre: this.form.remitente_nombre,
+      telefono: this.form.remitente_telefono
+    }
+
+    // Evitar duplicados por nombre + teléfono
+    const filtrados = existentes.filter(
+      r => r.nombre !== nuevo.nombre || r.telefono !== nuevo.telefono
+    )
+
+    filtrados.unshift(nuevo)
+
+    // Limitar a últimos 5
+    localStorage.setItem(key, JSON.stringify(filtrados.slice(0, 5)))
   }
+
+
 }
 </script>

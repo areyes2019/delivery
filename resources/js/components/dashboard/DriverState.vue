@@ -2,17 +2,18 @@
   <!-- PANEL DERECHO -->
   <div class="col-md-2 p-0">
     <div class="panel">
-      <a
-        href="#"
-        data-bs-toggle="modal"
-        data-bs-target="#modalEntrega"
-        class="text-decoration-none text-dark"
-      >
 
-        <div
-          v-for="item in envios"
-          :key="item.id"
-          class="card"
+      <div
+        v-for="item in envios"
+        :key="item.id"
+        class="card"
+      >
+        <a
+          href="#"
+          class="text-decoration-none text-dark"
+          data-bs-toggle="modal"
+          data-bs-target="#modalEntrega"
+          @click.prevent="abrirModal(item)"
         >
           <div class="card-body">
 
@@ -26,21 +27,26 @@
               >
               <div>
                 <strong>Repartidor</strong><br>
-                <strong>{{item.driver?.name || 'Sin Asignar'}}</strong>
-                <small class="text-muted"></small>
+                <strong>{{ item.driver?.name || 'Sin Asignar' }}</strong>
               </div>
             </div>
 
             <strong>Recibe:</strong>
-            <p class="mb-0">{{item.destinatario_nombre}}</p>
+            <p class="mb-0">{{ item.destinatario_nombre }}</p>
 
             <strong>Dirección</strong>
             <p class="mb-2">{{ item.pickup_description }}</p>
 
-            <span class="badge bg-success mb-2">{{statusLabel(item.status)}}</span>
+            <span class="badge bg-success mb-2">
+              {{ statusLabel(item.status) }}
+            </span>
 
-            <div class="progress mt-2" style="height:6px;">
-              <div class="progress-bar bg-success" style="width:100%"></div>
+            <!-- PROGRESO -->
+            <div class="progress" style="height:6px;">
+              <div
+                class="progress-bar bg-success"
+                :style="{ width: progressValue(item.status) + '%' }"
+              ></div>
             </div>
 
             <small class="text-success mt-2 d-block">
@@ -48,13 +54,13 @@
             </small>
 
           </div>
-        </div>
+        </a>
+      </div>
 
-      </a>
     </div>
   </div>
 
-  <!-- MODAL DETALLE DE ENVIO -->
+  <!-- MODAL DETALLE DE ENVÍO -->
   <div class="modal fade" id="modalEntrega" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content rounded-0">
@@ -64,32 +70,25 @@
           <button class="btn-close" data-bs-dismiss="modal"></button>
         </div>
 
-        <div class="modal-body">
+        <div class="modal-body" v-if="envioSeleccionado">
 
           <!-- TIMELINE -->
           <ul class="timeline">
-            <li>
-              <span class="time">6:50</span>
+            <li
+              v-for="(step, index) in timeline(envioSeleccionado)"
+              :key="index"
+            >
+              <span class="time">{{ formatTime(step.time) }}</span>
               <span class="dot bg-success"></span>
-              <span class="text">Solicitado</span>
-            </li>
-            <li>
-              <span class="time">7:00</span>
-              <span class="dot bg-success"></span>
-              <span class="text">Llegada al domicilio</span>
-            </li>
-            <li>
-              <span class="time">7:20</span>
-              <span class="dot bg-primary"></span>
-              <span class="text">En camino</span>
+              <span class="text">{{ step.label }}</span>
             </li>
           </ul>
 
           <hr>
 
           <div class="text-center">
-            <strong>Tiempo restante:</strong> 5 min<br>
-            <small class="text-muted">Llegada aproximada 7:50</small>
+            <strong>Estado actual:</strong>
+            {{ statusLabel(envioSeleccionado.status) }}
           </div>
 
         </div>
@@ -102,13 +101,25 @@
 <script>
 export default {
   name: 'DriverState',
-  props:{
-    envios:{
-      type:Array,
-      default:()=>[]
+
+  props: {
+    envios: {
+      type: Array,
+      default: () => []
     }
   },
-  methods:{
+
+  data() {
+    return {
+      envioSeleccionado: null
+    }
+  },
+
+  methods: {
+    abrirModal(item) {
+      this.envioSeleccionado = item
+    },
+
     statusLabel(status) {
       switch (status) {
         case 'ACCEPTED':
@@ -117,21 +128,68 @@ export default {
           return 'En ruta'
         case 'PAID':
           return 'Pagado'
+        case 'DELIVERED':
+          return 'Entregado'
         default:
           return status
       }
     },
+
     progressValue(status) {
       switch (status) {
         case 'ACCEPTED':
-          return 33
+          return 25
         case 'PICKED_UP':
-          return 66
+          return 50
         case 'PAID':
-          return 90
+          return 75
+        case 'DELIVERED':
+          return 100
         default:
           return 0
       }
+    },
+
+    timeline(item) {
+      if (!item) return []
+
+      const steps = []
+
+      steps.push({
+        label: 'Solicitado',
+        time: item.created_at
+      })
+
+      if (item.started_at) {
+        steps.push({
+          label: 'En ruta',
+          time: item.started_at
+        })
+      }
+
+      if (item.paid_at) {
+        steps.push({
+          label: 'Pagado',
+          time: item.paid_at
+        })
+      }
+
+      if (item.delivered_at) {
+        steps.push({
+          label: 'Entregado',
+          time: item.delivered_at
+        })
+      }
+
+      return steps
+    },
+
+    formatTime(date) {
+      if (!date) return ''
+      return new Date(date).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
     }
   }
 }

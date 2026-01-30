@@ -100,7 +100,7 @@
     <div class="footer">
 
         {{-- CREATED --}}
-        @if($entrega->puedeSerAceptada())
+        @if($entrega->status === \App\Enums\EntregaStatus::CREATED->value)
             <form method="POST" action="{{ url("/driver/{$entrega->id}/accept") }}">
                 @csrf
                 <button class="btn-confirm">Confirmar Aceptar</button>
@@ -108,7 +108,7 @@
         @endif
 
         {{-- ACCEPTED --}}
-        @if($entrega->puedeIniciar())
+        @if($entrega->status === \App\Enums\EntregaStatus::ACCEPTED->value)
             <form method="POST" action="{{ url("/driver/{$entrega->id}/start") }}">
                 @csrf
                 <button class="btn-confirm">Confirmar Recogida</button>
@@ -116,7 +116,7 @@
         @endif
 
         {{-- PICKED_UP --}}
-        @if($entrega->puedeMarcarPagada())
+        @if($entrega->status === \App\Enums\EntregaStatus::PICKED_UP->value)
             <form method="POST" action="{{ url("/driver/{$entrega->id}/pay") }}">
                 @csrf
                 <button class="btn-confirm">Confirmar Pago</button>
@@ -124,12 +124,20 @@
         @endif
 
         {{-- FINAL --}}
-        @if($entrega->puedeFinalizar())
+        @if(in_array(
+            $entrega->status,
+            [
+                \App\Enums\EntregaStatus::PICKED_UP->value,
+                \App\Enums\EntregaStatus::PAID->value
+            ],
+            true
+        ))
             <form method="POST" action="{{ url("/driver/{$entrega->id}/complete") }}">
                 @csrf
                 <button class="btn-confirm">Finalizar Entrega</button>
             </form>
         @endif
+
 
         <a href="{{ url('/driver') }}" class="btn-back">Cancelar / Volver</a>
 

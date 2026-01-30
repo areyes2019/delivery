@@ -15,7 +15,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
-
+use Illuminate\Auth\Middleware\Authenticate;
 return Application::configure(basePath: dirname(__DIR__))
 
     ->withRouting(
@@ -25,26 +25,21 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
 
-    // 🛡️ MIDDLEWARES (Laravel 12)
+    // ✅ BROADCASTING (ÚNICA VEZ, FORMA CORRECTA)
+    ->withBroadcasting(
+        channels: __DIR__.'/../routes/channels.php',
+    )
+
+    // 🛡️ MIDDLEWARES
     ->withMiddleware(function (Middleware $middleware): void {
 
-        /*
-        |--------------------------------------------------------------------------
-        | Aliases
-        |--------------------------------------------------------------------------
-        */
-        $middleware->alias([
+       $middleware->alias([
+            'auth'     => Authenticate::class,
             'jwt.auth' => JwtMiddleware::class,
             'cliente'  => EnsureCliente::class,
             'role'     => EnsureRole::class,
         ]);
 
-        /*
-        |--------------------------------------------------------------------------
-        | WEB STACK (SESSION + CSRF)
-        |--------------------------------------------------------------------------
-        | ❗ NO Authenticate aquí
-        */
         $middleware->web([
             EncryptCookies::class,
             StartSession::class,
@@ -52,11 +47,6 @@ return Application::configure(basePath: dirname(__DIR__))
             SubstituteBindings::class,
         ]);
 
-        /*
-        |--------------------------------------------------------------------------
-        | API STACK (SANCTUM STATEFUL)
-        |--------------------------------------------------------------------------
-        */
         $middleware->api([
             EnsureFrontendRequestsAreStateful::class,
             SubstituteBindings::class,

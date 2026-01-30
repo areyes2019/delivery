@@ -14,74 +14,49 @@ class ClientRequest extends Model
 {
     protected $table = 'client_requests';
 
-    /*
-    |------------------------------------------------------------------
-    | Casts
-    |------------------------------------------------------------------
-    */
     protected $casts = [
         'pickup_position'      => 'array',
         'destination_position' => 'array',
+        'accepted_at'          => 'datetime',
         'started_at'           => 'datetime',
         'paid_at'              => 'datetime',
         'delivered_at'         => 'datetime',
     ];
 
-    /*
-    |------------------------------------------------------------------
-    | Campos asignables
-    |------------------------------------------------------------------
-    */
     protected $fillable = [
-        // 🔐 TENANT
         'cliente_id',
         'flotilla_id',
-
-        // 👤 CONTROL
         'created_by_dispatcher_id',
         'driver_id',
         'status',
 
-        // 📞 REMITENTE
         'remitente_nombre',
         'remitente_telefono',
-
-        // 📦 DESTINATARIO
         'destinatario_nombre',
         'destinatario_telefono',
 
-        // 📍 UBICACIONES
         'pickup_position',
         'destination_position',
         'pickup_description',
         'destination_description',
 
-        // 💰 COSTOS
         'fare_offered',
         'product_amount',
         'total_expected',
 
-        // ⏱️ TIMESTAMPS
+        'accepted_at',
         'started_at',
         'paid_at',
         'delivered_at',
 
-        // 📝 EXTRA
         'observaciones',
     ];
 
-    /* -----------------------------------------------------------------
-     | Scopes
-     |-----------------------------------------------------------------*/
+    /* ===================== SCOPES ===================== */
 
     public function scopeDeCliente($query, int $clienteId)
     {
         return $query->where('cliente_id', $clienteId);
-    }
-
-    public function scopeDisponibles($query)
-    {
-        return $query->where('status', EntregaStatus::CREATED->value);
     }
 
     public function scopeEnProceso($query)
@@ -93,9 +68,12 @@ class ClientRequest extends Model
         ]);
     }
 
-    /* -----------------------------------------------------------------
-     | Relaciones
-     |-----------------------------------------------------------------*/
+    /* ===================== RELACIONES ===================== */
+
+    public function driver()
+    {
+        return $this->belongsTo(User::class, 'driver_id');
+    }
 
     public function cliente()
     {
@@ -107,113 +85,110 @@ class ClientRequest extends Model
         return $this->belongsTo(Flotilla::class);
     }
 
-    public function driver()
-    {
-        return $this->belongsTo(User::class, 'driver_id');
-    }
-
-    public function createdByDispatcher()
-    {
-        return $this->belongsTo(User::class, 'created_by_dispatcher_id');
-    }
-
     public function entregaPago()
     {
         return $this->hasOne(EntregaPago::class);
     }
 
-    /* -----------------------------------------------------------------
-     | Máquina de estados (FUENTE DE VERDAD)
-     |-----------------------------------------------------------------*/
-
-    public function puedeSerAceptada(): bool
-    {
-        return $this->status === EntregaStatus::CREATED->value;
-    }
+    /* ===================== ESTADOS ===================== */
 
     public function marcarComoAceptada(User $driver): void
     {
-        if (! $this->puedeSerAceptada()) {
-            throw new \LogicException('La solicitud no puede ser aceptada');
-        }
+        $this->ensure(
+            $this->status === EntregaStatus::CREATED->value,
+            'La solicitud no puede ser aceptada'
+        );
 
         $this->update([
             'status'      => EntregaStatus::ACCEPTED->value,
             'driver_id'   => $driver->id,
             'flotilla_id' => $driver->flotilla_id,
+            'accepted_at' => now(),
         ]);
-    }
-
-    public function puedeIniciar(): bool
-    {
-        return $this->status === EntregaStatus::ACCEPTED->value;
     }
 
     public function iniciarEntrega(User $driver): void
     {
-        if (! $this->puedeIniciar()) {
-            throw new \LogicException('La solicitud no puede iniciar');
-        }
+        $this->ensure(
+            $this->status === EntregaStatus::ACCEPTED->value,
+            'La entrega no puede iniciar'
+        );
 
-        if ($this->driver_id !== $driver->id) {
-            throw new \LogicException('No eres el driver asignado');
-        }
+        $this->ensure(
+            $this->driver_id === $driver->id,
+            'No eres el driver asignado'
+        );
 
         $this->update([
             'status'     => EntregaStatus::PICKED_UP->value,
-            'started_at' => Carbon::now(),
+            'started_at' => now(),
         ]);
-    }
-
-    public function puedeMarcarPagada(): bool
-    {
-        return $this->status === EntregaStatus::PICKED_UP->value;
     }
 
     public function marcarComoPagada(): void
     {
-        if (! $this->puedeMarcarPagada()) {
-            throw new \LogicException('La entrega no puede marcarse como pagada');
-        }
+        $this->ensure(
+            $this->status === EntregaStatus::PICKED_UP->value,
+            'La entrega no puede marcarse como pagada'
+        );
 
         $this->update([
             'status'  => EntregaStatus::PAID->value,
-            'paid_at' => Carbon::now(),
+            'paid_at' => now(),
         ]);
-    }
-
-    public function puedeFinalizar(): bool
-    {
-        return in_array($this->status, [
-            EntregaStatus::PICKED_UP->value,
-            EntregaStatus::PAID->value,
-        ], true);
     }
 
     public function marcarComoEntregada(): void
     {
-        if (! $this->puedeFinalizar()) {
-            throw new \LogicException('La entrega no puede finalizarse');
-        }
+        $this->ensure(
+            in_array($this->status, [
+                EntregaStatus::PICKED_UP->value,
+                EntregaStatus::PAID->value,
+            ], true),
+            'La entrega no puede finalizarse'
+        );
 
         $this->update([
             'status'       => EntregaStatus::DELIVERED->value,
-            'delivered_at' => Carbon::now(),
+            'delivered_at' => now(),
         ]);
     }
 
-    public function cancelar(): void
+    /* ===================== ETA / TIEMPOS ===================== */
+
+    /**
+     * Minutos transcurridos desde que fue aceptada
+     */
+    public function minutosDesdeAceptacion(): ?int
     {
-        if (in_array($this->status, [
-            EntregaStatus::PICKED_UP->value,
-            EntregaStatus::PAID->value,
-            EntregaStatus::DELIVERED->value,
-        ], true)) {
-            throw new \LogicException('No se puede cancelar una entrega en curso o finalizada');
+        if (! $this->accepted_at instanceof Carbon) {
+            return null;
         }
 
-        $this->update([
-            'status' => EntregaStatus::CANCELED->value,
-        ]);
+        return $this->accepted_at->diffInMinutes(now());
+    }
+
+    /**
+     * Minutos restantes estimados (ETA simple)
+     * NO rompe aunque no tengas ETA real todavía
+     */
+    public function minutosRestantes(int $etaBase = 30): ?int
+    {
+        if (! $this->accepted_at instanceof Carbon) {
+            return null;
+        }
+
+        $transcurridos = $this->accepted_at->diffInMinutes(now());
+
+        return max($etaBase - $transcurridos, 0);
+    }
+
+    /* ===================== HELPERS ===================== */
+
+    private function ensure(bool $condition, string $message): void
+    {
+        if (! $condition) {
+            throw new \LogicException($message);
+        }
     }
 }

@@ -15,7 +15,6 @@ use App\Http\Controllers\DriverTestController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EntregaController;
 use App\Http\Controllers\Driver\EntregaDriverController;
-use App\Http\Controllers\Driver\ClientRequestDriverController;
 /*
 |--------------------------------------------------------------------------
 | AUTH
@@ -127,20 +126,10 @@ Route::prefix('driver')
             [ClientRequestController::class, 'pay']
         );
         Route::get(
-            '/client-requests',
-            [ClientRequestController::class, 'available']
+            '/client-requests/disponibles',
+            [ClientRequestController::class, 'disponibles']
         );
-        // (legacy / otros módulos)
-        //Route::post('/entregas/estado', [EntregaDriverController::class, 'changeEstado']);
-        
-        //TABLERO DE DRIVER PROVISIONAL
-        /*Route::get('/tablero', [EntregaDriverController::class, 'tablero']);
-        Route::get('/entrega-actual', [EntregaDriverController::class, 'actual']);
 
-        Route::post('/entregas/{id}/aceptar', [EntregaDriverController::class, 'aceptar']);
-        Route::post('/entregas/{id}/iniciar', [EntregaDriverController::class, 'iniciar']);
-        Route::post('/entregas/{id}/cobrar', [EntregaDriverController::class, 'cobrar']);
-        Route::post('/entregas/{id}/entregar', [EntregaDriverController::class, 'entregar']);*/
 });
 
 

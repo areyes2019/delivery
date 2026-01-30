@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 use App\Models\ClientRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class DriverTestController extends Controller
 {
@@ -27,24 +29,30 @@ class DriverTestController extends Controller
 
     public function accept($id)
     {
-        $driver = auth()->user();
+        $driver = Auth::user();
 
         if ($this->driverTieneEntregaActiva($driver->id)) {
             return back()->with('error', 'Ya tienes una entrega activa');
         }
 
         $entrega = ClientRequest::findOrFail($id);
-        $entrega->marcarComoAceptada($driver);
+
+        try {
+            $entrega->marcarComoAceptada($driver);
+        } catch (\LogicException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         return redirect("/driver/$id");
     }
+
 
     public function start($id)
     {
         $entrega = ClientRequest::findOrFail($id);
         $this->validarEntregaDelDriver($entrega);
 
-        $entrega->iniciarEntrega(auth()->user());
+        $entrega->iniciarEntrega(Auth::user());
         return back();
     }
 
@@ -77,7 +85,7 @@ class DriverTestController extends Controller
 
     private function validarEntregaDelDriver(ClientRequest $entrega): void
     {
-        if ($entrega->driver_id !== auth()->id()) {
+        if ($entrega->driver_id !== Auth::id()) {
             abort(403);
         }
     }
