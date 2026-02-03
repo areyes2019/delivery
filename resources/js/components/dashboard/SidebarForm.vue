@@ -1,18 +1,13 @@
 <template>
-  <!-- PANEL IZQUIERDO -->
   <div class="col-md-2 p-0">
     <div class="panel">
-
-      <!-- 🔹 HEADER -->
       <div class="p-2 border-bottom">
         <h6 class="m-0 text-center fw-bold">
           Cola de solicitudes
         </h6>
       </div>
 
-      <!-- 🔹 LISTADO -->
       <div class="p-2">
-
         <a
           v-for="item in solicitudes"
           :key="item.id"
@@ -40,18 +35,17 @@
         >
           No hay solicitudes en cola
         </div>
-
       </div>
     </div>
   </div>
 
-  <!-- FORMULARIO -->
   <CrearEntrega
     :open="open"
     @close="$emit('close')"
-    @entrega-creada="$emit('entrega-creada', $event)"
+    @entrega-creada="onEntregaCreadaLocal"
   />
 </template>
+
 <script>
 import CrearEntrega from './CrearEntrega.vue'
 
@@ -71,7 +65,12 @@ export default {
   emits: ['close', 'entrega-creada'],
 
   methods: {
-    shortAddress(address) {
+    onEntregaCreadaLocal (data) {
+      console.log('📤 SidebarForm recibe entrega:', data)
+      this.$emit('entrega-creada', data)
+    },
+
+    shortAddress (address) {
       if (!address) return ''
       return address.split(',').slice(0, 2).join(',').trim()
     }

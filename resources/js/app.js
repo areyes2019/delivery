@@ -1,10 +1,10 @@
 import '../css/dashboard.css'
 import axios from 'axios'
 import Echo from 'laravel-echo'
-import Pusher from 'pusher-js'   // 👈 AÑADIR
+import Pusher from 'pusher-js'
 import { createApp } from 'vue'
 
-// Bootstrap 5
+// Bootstrap
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import 'bootstrap-icons/font/bootstrap-icons.css'
@@ -23,21 +23,18 @@ if (token) {
   axios.defaults.headers.common['X-CSRF-TOKEN'] = token.content
 }
 
-// 👇🔥 ESTA LÍNEA ES CRÍTICA 🔥👇
+// 🔑 Pusher global
 window.Pusher = Pusher
 
-// 🚀 Echo + Reverb
+// 🚀 Echo + PUSHER (CORRECTO)
 window.Echo = new Echo({
-  broadcaster: 'reverb',
-  key: import.meta.env.VITE_REVERB_APP_KEY,
-  wsHost: import.meta.env.VITE_REVERB_HOST,
-  wsPort: Number(import.meta.env.VITE_REVERB_PORT),
-  forceTLS: false,
-  encrypted: false,
-  disableStats: true,
+  broadcaster: 'pusher',
+  key: import.meta.env.VITE_PUSHER_APP_KEY,
+  cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
+  forceTLS: true,
 })
 
-console.log('🟢 Echo inicializado correctamente')
+console.log('🟢 Echo inicializado con Pusher')
 
-// 🚀 App
+// 🚀 Vue App
 createApp(DashboardLayout).mount('#app')

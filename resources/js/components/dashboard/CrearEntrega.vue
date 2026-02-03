@@ -200,10 +200,11 @@ export default {
           observaciones: this.form.observaciones
         }
 
-        const res = await axios.post('/client-requests', payload, {
+        const res = await axios.post('/api/client-requests', payload, {
           baseURL: '/'
         })
-
+        // Debug
+        console.log('📨 Emitiendo entrega:', res.data.data)
         this.$emit('entrega-creada', res.data.data)
         this.$emit('close')
         this.form = this.emptyForm()

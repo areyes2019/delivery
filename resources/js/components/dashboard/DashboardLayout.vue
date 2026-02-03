@@ -1,5 +1,6 @@
 <template>
-  <div class="dashboard-layout">
+  <!-- ⏳ Esperar a que el usuario exista -->
+  <div v-if="user" class="dashboard-layout">
     <Navbar
       @nuevo-envio="abrirFormulario"
       @logout="cerrarSesion"
@@ -17,8 +18,7 @@
     </div>
 
     <div class="container-fluid m-0 p-0">
-      <div class="row m-0 p-0">
-        <!-- DESPACHADOR -->
+      <div class="row m-0 p-0" style="min-height:100vh">
         <SidebarForm
           :open="sidebarOpen"
           :solicitudes="colaSolicitudes"
@@ -28,11 +28,18 @@
 
         <MapView />
 
-        <DriverState
-          :envios="solicitudesEnProceso"
-        />
+        <DriverState :envios="solicitudesEnProceso" />
       </div>
     </div>
+  </div>
+
+  <!-- ⌛ Fallback mientras carga -->
+  <div
+    v-else
+    class="d-flex justify-content-center align-items-center"
+    style="min-height:100vh"
+  >
+    <span class="text-muted">Cargando dashboard…</span>
   </div>
 </template>
 
@@ -60,7 +67,8 @@ export default {
       alerta: null,
       solicitudes: [],
       cargandoSolicitudes: false,
-      channel: null
+      channel: null,
+      user: null
     }
   },
 
@@ -80,6 +88,7 @@ export default {
   },
 
   async mounted () {
+    await this.loadAuthUser()
     await this.fetchSolicitudes()
     this.setupWebSocket()
   },
@@ -94,19 +103,59 @@ export default {
   },
 
   methods: {
+    async loadAuthUser () {
+      try {
+        const res = await web.get('/me')
+        this.user = res.data
+        console.log('👤 Usuario cargado:', this.user)
+      } catch (e) {
+        console.error('❌ Error cargando usuario', e)
+      }
+    },
+
+    setupWebSocket () {
+      if (!window.Echo) {
+        console.warn('Echo no disponible')
+        return
+      }
+
+      if (!this.user || !this.user.cliente_id) {
+        console.error('❌ Usuario o cliente_id no disponible', this.user)
+        return
+      }
+
+      const clienteId = this.user.cliente_id
+
+      console.log(`🔌 Suscrito a dashboard.cliente.${clienteId}`)
+
+      this.channel = window.Echo
+        .private(`dashboard.cliente.${clienteId}`)
+        .listen('.client-request.accepted', data => {
+          console.log('📡 ACCEPTED', data)
+          this.onSolicitudActualizada(data)
+        })
+        .listen('.client-request.picked-up', data => {
+          this.onSolicitudActualizada(data)
+        })
+        .listen('.client-request.paid', data => {
+          this.onSolicitudActualizada(data)
+        })
+        .listen('.client-request.completed', data => {
+          this.onSolicitudCompletada(data)
+        })
+    },
+
     abrirFormulario () {
       this.sidebarOpen = true
     },
 
-    async onEntregaCreada () {
-      await this.fetchSolicitudes()
-      //this.sidebarOpen = false
+    onEntregaCreada (data) {
       this.onSolicitudActualizada(data)
+      this.sidebarOpen = false
     },
 
     async fetchSolicitudes () {
       this.cargandoSolicitudes = true
-
       try {
         const res = await web.get('/dashboard/client-requests')
         this.solicitudes = res.data
@@ -118,68 +167,18 @@ export default {
       }
     },
 
-    setupWebSocket () {
-      if (!window.Echo) {
-        console.error('Echo no disponible')
-        return
-      }
-
-      console.log('🔌 Conectando a Reverb…')
-
-      this.channel = window.Echo.private('dashboard')
-
-      this.channel
-        .listen('.client-request.accepted', data => {
-          console.log('📡 ACCEPTED', data)
-
-          const existente = this.solicitudes.find(s => s.id === data.id)
-
-          // 🔔 solo alertar si antes NO estaba aceptada
-          if (!existente || existente.status !== 'ACCEPTED') {
-            this.mostrarAlerta(
-              `🚴 ${data.driver?.name ?? 'Un repartidor'} tomó la solicitud #${data.id}`
-            )
-          }
-
-          this.onSolicitudActualizada(data)
-        })
-        
-
-        .listen('.client-request.picked-up', data => {
-          console.log('📡 PICKED_UP', data)
-          this.onSolicitudActualizada(data)
-        })
-        .listen('.client-request.paid', data => {
-          console.log('📡 PAID', data)
-          this.onSolicitudActualizada(data)
-        })
-        .listen('.client-request.completed', data => {
-          console.log('📡 COMPLETED', data)
-          this.onSolicitudCompletada(data)
-        })
-
-      console.log('🟢 Suscrito al canal dashboard')
-    },
-
     onSolicitudActualizada (data) {
-      const index = this.solicitudes.findIndex(
-        s => s.id === data.id
-      )
+      const index = this.solicitudes.findIndex(s => s.id === data.id)
 
       if (index !== -1) {
-        // actualizar existente
         this.solicitudes[index] = {
           ...this.solicitudes[index],
           ...data
         }
       } else {
-        // 👇 insertar la solicitud si no existe
-        this.solicitudes.unshift({
-          ...data
-        })
+        this.solicitudes.unshift(data)
       }
     },
-
 
     onSolicitudCompletada (data) {
       this.solicitudes = this.solicitudes.filter(
@@ -189,9 +188,7 @@ export default {
 
     mostrarAlerta (mensaje, duracion = 5000) {
       this.alerta = mensaje
-      setTimeout(() => {
-        this.alerta = null
-      }, duracion)
+      setTimeout(() => (this.alerta = null), duracion)
     },
 
     async cerrarSesion () {
@@ -204,11 +201,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.alert-success {
-  background-color: #d4edda;
-  border-color: #c3e6cb;
-  color: #155724;
-}
-</style>

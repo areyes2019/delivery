@@ -22,7 +22,9 @@ class ClientRequestAccepted implements ShouldBroadcast, ShouldQueue
 
     public function broadcastOn()
     {
-        return new PrivateChannel('dashboard');
+        return new PrivateChannel(
+            'dashboard.cliente.'.$this->clientRequest->cliente_id
+        );
     }
 
     public function broadcastAs(): string

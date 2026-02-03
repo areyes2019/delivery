@@ -101,7 +101,7 @@ Route::get('/test-broadcast', function() {
 | DESPACHADOR
 |--------------------------------------------------------------------------
 */
-Route::middleware(['web', 'auth', 'role:despachador'])->group(function () {
+/*Route::middleware(['web', 'auth', 'role:despachador'])->group(function () {
 
     Route::post('/client-requests', [ClientRequestController::class, 'store']);
     Route::get('/client-requests', [ClientRequestController::class, 'index']);
@@ -113,4 +113,4 @@ Route::middleware(['web', 'auth', 'role:despachador'])->group(function () {
         '/dashboard/client-requests',
         [ClientRequestController::class, 'dashboard']
     );
-});
+});*/

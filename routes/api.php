@@ -104,6 +104,16 @@ Route::middleware(['auth:sanctum', 'role:despachador'])->group(function () {
 Route::prefix('driver')
     ->middleware(['auth:sanctum', 'role:driver'])
     ->group(function () {
+        
+        Route::get('/active-request', function (Request $request) {
+            return \App\Models\ClientRequest::where('driver_id', $request->user()->id)
+                ->whereIn('status', [
+                    \App\Enums\EntregaStatus::ACCEPTED->value,
+                    \App\Enums\EntregaStatus::PICKED_UP->value,
+                    \App\Enums\EntregaStatus::PAID->value,
+                ])
+                ->first();
+        });
 
         // 📍 ACTUALIZAR POSICIÓN (NUEVO)
         Route::post('/position', [DriverPositionController::class, 'store']);
@@ -128,6 +138,12 @@ Route::prefix('driver')
         Route::get(
             '/client-requests/disponibles',
             [ClientRequestController::class, 'disponibles']
+        );
+
+        // 👇 FINALIZAR EL SERVICIO
+        Route::post(
+            '/client-requests/{id}/complete',
+            [ClientRequestController::class, 'complete']
         );
 
 });

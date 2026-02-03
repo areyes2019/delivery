@@ -10,6 +10,7 @@ use App\Http\Requests\ClientRequest\CreateClientRequest;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Support\Facades\Cache;
 use App\Enums\EntregaStatus;
+
 /* 🔔 Eventos */
 use App\Events\ClientRequestAccepted;
 use App\Events\ClientRequestPickedUp;
@@ -23,14 +24,11 @@ class ClientRequestController extends Controller
     ) {}
 
     /*
-    |--------------------------------------------------------------------------
+    |--------------------------------------------------------------------------|
     | DESPACHADOR
-    |--------------------------------------------------------------------------
+    |--------------------------------------------------------------------------|
     */
 
-    /**
-     * ➕ Crear nueva solicitud (Despachador)
-     */
     public function store(CreateClientRequest $request): JsonResponse
     {
         $user = $request->user();
@@ -53,16 +51,15 @@ class ClientRequestController extends Controller
             'data' => [
                 'id' => $clientRequest->id,
                 'status' => $clientRequest->status,
-                'destinatario' => $clientRequest->destinatario_nombre,
+                'destinatario_nombre' => $clientRequest->destinatario_nombre,
+                'pickup_description' => $clientRequest->pickup_description,
                 'destination_description' => $clientRequest->destination_description,
+                'fare_offered' => $clientRequest->fare_offered,
                 'created_at' => $clientRequest->created_at->toISOString(),
             ],
         ], 201);
     }
 
-    /**
-     * 📋 Dashboard general (Despachador)
-     */
     public function dashboard(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -76,20 +73,15 @@ class ClientRequestController extends Controller
         $requests = Cache::remember(
             $cacheKey,
             5,
-            function () use ($user) {
-                return ClientRequest::with('driver:id,name')
-                    ->deCliente($user->cliente_id)
-                    ->orderByDesc('created_at')
-                    ->get();
-            }
+            fn () => ClientRequest::with('driver:id,name')
+                ->deCliente($user->cliente_id)
+                ->orderByDesc('created_at')
+                ->get()
         );
 
         return response()->json($requests);
     }
 
-    /**
-     * 🚚 Envíos en proceso (Despachador)
-     */
     public function enProceso(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -103,22 +95,20 @@ class ClientRequestController extends Controller
         $requests = Cache::remember(
             $cacheKey,
             5,
-            function () use ($user) {
-                return ClientRequest::with('driver:id,name')
-                    ->deCliente($user->cliente_id)
-                    ->enProceso()
-                    ->orderByDesc('created_at')
-                    ->get();
-            }
+            fn () => ClientRequest::with('driver:id,name')
+                ->deCliente($user->cliente_id)
+                ->enProceso()
+                ->orderByDesc('created_at')
+                ->get()
         );
 
         return response()->json($requests);
     }
 
     /*
-    |--------------------------------------------------------------------------
+    |--------------------------------------------------------------------------|
     | DRIVER
-    |--------------------------------------------------------------------------
+    |--------------------------------------------------------------------------|
     */
 
     public function disponibles(Request $request): JsonResponse
@@ -129,51 +119,59 @@ class ClientRequestController extends Controller
             throw new HttpException(403, 'Solo drivers pueden ver solicitudes');
         }
 
-        $requests = ClientRequest::where(
-                'status',
-                EntregaStatus::CREATED->value
-            )
-            ->orderBy('created_at', 'desc')
-            ->get([
-                'id',
-                'pickup_description',
-                'destination_description',
-                'fare_offered',
-                'status',
-                'created_at',
-            ]);
-
-        return response()->json($requests);
+        return response()->json(
+            ClientRequest::where('status', EntregaStatus::CREATED->value)
+                ->orderByDesc('created_at')
+                ->get([
+                    'id',
+                    'pickup_description',
+                    'destination_description',
+                    'fare_offered',
+                    'status',
+                    'created_at',
+                ])
+        );
     }
 
     /**
-     * ✅ Aceptar solicitud (Driver)
+     * ✅ CREATED → ACCEPTED
      */
     public function accept(Request $request, int $id): JsonResponse
     {
         $driver = $request->user();
 
         if ($driver->rol !== 'driver') {
-            throw new HttpException(403, 'Solo drivers pueden aceptar solicitudes');
+            throw new HttpException(403);
         }
 
-        $clientRequest = ClientRequest::findOrFail($id);
+        $tieneActiva = ClientRequest::where('driver_id', $driver->id)
+            ->whereIn('status', [
+                EntregaStatus::ACCEPTED->value,
+                EntregaStatus::PICKED_UP->value,
+                EntregaStatus::PAID->value,
+            ])
+            ->exists();
 
-        try {
-            $clientRequest->marcarComoAceptada($driver);
-        } catch (\LogicException $e) {
-            throw new HttpException(409, $e->getMessage());
+        if ($tieneActiva) {
+            return response()->json([
+                'message' => 'Ya tienes una solicitud activa'
+            ], 422);
         }
+
+        $clientRequest = ClientRequest::where('id', $id)
+            ->where('status', EntregaStatus::CREATED->value)
+            ->firstOrFail();
+
+        $clientRequest->marcarComoAceptada($driver);
 
         Cache::forget("dashboard_requests_cliente_{$clientRequest->cliente_id}");
         Cache::forget("en_proceso_cliente_{$clientRequest->cliente_id}");
 
-        // 🔔 EVENTO ACCEPTED
-        event(
+        broadcast(
             new ClientRequestAccepted(
                 $clientRequest->fresh('driver')
             )
-        );
+        )->toOthers();
 
         return response()->json([
             'message' => 'Solicitud aceptada',
@@ -185,28 +183,27 @@ class ClientRequestController extends Controller
     }
 
     /**
-     * ▶️ Iniciar entrega (Driver)
+     * 📦 ACCEPTED → PICKED_UP
+     * (Confirmar recogida en Flutter)
      */
     public function start(Request $request, int $id): JsonResponse
     {
         $driver = $request->user();
-
-        if ($driver->rol !== 'driver') {
-            throw new HttpException(403, 'Solo drivers pueden iniciar la entrega');
-        }
-
         $clientRequest = ClientRequest::findOrFail($id);
 
-        try {
-            $clientRequest->iniciarEntrega($driver);
-        } catch (\LogicException $e) {
-            throw new HttpException(409, $e->getMessage());
+        if ($driver->rol !== 'driver' || $clientRequest->driver_id !== $driver->id) {
+            throw new HttpException(403);
         }
+
+        if ($clientRequest->status !== EntregaStatus::ACCEPTED->value) {
+            throw new HttpException(409, 'Estado inválido para iniciar');
+        }
+
+        $clientRequest->iniciarEntrega($driver);
 
         Cache::forget("dashboard_requests_cliente_{$clientRequest->cliente_id}");
         Cache::forget("en_proceso_cliente_{$clientRequest->cliente_id}");
 
-        // 🔔 EVENTO PICKED_UP
         event(
             new ClientRequestPickedUp(
                 $clientRequest->fresh('driver')
@@ -214,7 +211,7 @@ class ClientRequestController extends Controller
         );
 
         return response()->json([
-            'message' => 'Entrega iniciada',
+            'message' => 'Recogida confirmada',
             'data' => [
                 'id' => $clientRequest->id,
                 'status' => $clientRequest->status,
@@ -224,28 +221,26 @@ class ClientRequestController extends Controller
     }
 
     /**
-     * 💰 Marcar como pagada (Driver)
+     * 💰 PICKED_UP → PAID
      */
     public function pay(Request $request, int $id): JsonResponse
     {
         $driver = $request->user();
-
-        if ($driver->rol !== 'driver') {
-            throw new HttpException(403, 'Solo drivers pueden marcar como pagada');
-        }
-
         $clientRequest = ClientRequest::findOrFail($id);
 
-        try {
-            $clientRequest->marcarComoPagada();
-        } catch (\LogicException $e) {
-            throw new HttpException(409, $e->getMessage());
+        if ($driver->rol !== 'driver' || $clientRequest->driver_id !== $driver->id) {
+            throw new HttpException(403);
         }
+
+        if ($clientRequest->status !== EntregaStatus::PICKED_UP->value) {
+            throw new HttpException(409, 'La entrega aún no ha sido recogida');
+        }
+
+        $clientRequest->marcarComoPagada();
 
         Cache::forget("dashboard_requests_cliente_{$clientRequest->cliente_id}");
         Cache::forget("en_proceso_cliente_{$clientRequest->cliente_id}");
 
-        // 🔔 EVENTO PAID
         event(
             new ClientRequestPaid(
                 $clientRequest->fresh('driver')
@@ -253,7 +248,7 @@ class ClientRequestController extends Controller
         );
 
         return response()->json([
-            'message' => 'Entrega marcada como pagada',
+            'message' => 'Entrega cobrada',
             'data' => [
                 'id' => $clientRequest->id,
                 'status' => $clientRequest->status,
@@ -263,28 +258,26 @@ class ClientRequestController extends Controller
     }
 
     /**
-     * 🏁 Completar entrega (Driver)
+     * 🏁 PAID → DELIVERED
      */
     public function complete(Request $request, int $id): JsonResponse
     {
         $driver = $request->user();
-
-        if ($driver->rol !== 'driver') {
-            throw new HttpException(403, 'Solo drivers pueden marcar como entregada');
-        }
-
         $clientRequest = ClientRequest::findOrFail($id);
 
-        try {
-            $clientRequest->marcarComoEntregada();
-        } catch (\LogicException $e) {
-            throw new HttpException(409, $e->getMessage());
+        if ($driver->rol !== 'driver' || $clientRequest->driver_id !== $driver->id) {
+            throw new HttpException(403);
         }
+
+        if ($clientRequest->status !== EntregaStatus::PAID->value) {
+            throw new HttpException(409, 'La entrega debe estar pagada');
+        }
+
+        $clientRequest->marcarComoEntregada();
 
         Cache::forget("dashboard_requests_cliente_{$clientRequest->cliente_id}");
         Cache::forget("en_proceso_cliente_{$clientRequest->cliente_id}");
 
-        // 🔔 EVENTO COMPLETED
         event(
             new ClientRequestCompleted(
                 $clientRequest->fresh('driver')

@@ -22,7 +22,9 @@ class ClientRequestPickedUp implements ShouldBroadcast, ShouldQueue
 
     public function broadcastOn()
     {
-        return new PrivateChannel('dashboard');
+        return new PrivateChannel(
+            'driver.'.$this->entrega->driver_id
+        );
     }
 
     public function broadcastAs(): string
