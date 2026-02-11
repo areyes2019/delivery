@@ -3,12 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Enums\UserRole;
 
 class Cliente extends Model
 {
-    /**
-     * Campos asignables
-     */
     protected $fillable = [
         'nombre',
         'slug',
@@ -24,33 +22,28 @@ class Cliente extends Model
     |--------------------------------------------------------------------------
     */
 
-    // 🔗 Cliente → Usuarios (admins, despachadores, drivers)
     public function users()
     {
         return $this->hasMany(User::class);
     }
 
-    // 🔗 Cliente → Solo admins del cliente
     public function admins()
     {
         return $this->hasMany(User::class)
-            ->where('rol', 'admin_cliente');
+            ->where('rol', UserRole::ADMIN_CLIENTE);
     }
 
-    // 🔗 Cliente → Flotillas
     public function flotillas()
     {
         return $this->hasMany(Flotilla::class);
     }
 
-    // 🔗 Cliente → Drivers (a través de users)
     public function drivers()
     {
         return $this->hasMany(User::class)
-            ->where('rol', 'driver');
+            ->where('rol', UserRole::DRIVER);
     }
 
-    // 🔗 Cliente → Entregas / solicitudes
     public function entregas()
     {
         return $this->hasMany(ClientRequest::class);

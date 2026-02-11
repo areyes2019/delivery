@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Enums\UserRole;
 
 class User extends Authenticatable
 {
@@ -16,9 +17,9 @@ class User extends Authenticatable
     |--------------------------------------------------------------------------
     */
     protected $fillable = [
-        'cliente_id',   // null solo para super_admin
-        'flotilla_id',  // solo para driver
-        'parent_id',    // jerarquía (quién lo creó / supervisa)
+        'cliente_id',
+        'flotilla_id',
+        'parent_id',
         'name',
         'lastname',
         'email',
@@ -45,56 +46,35 @@ class User extends Authenticatable
     */
     protected $casts = [
         'activo' => 'boolean',
+        'rol'    => UserRole::class,
     ];
 
     /*
     |--------------------------------------------------------------------------
-    | Relaciones base
+    | Relaciones
     |--------------------------------------------------------------------------
     */
 
-    /**
-     * Usuario pertenece a un cliente
-     * (admin_cliente, despachador, driver)
-     */
     public function cliente()
     {
         return $this->belongsTo(Cliente::class);
     }
 
-    /**
-     * Solo drivers pertenecen a una flotilla
-     */
     public function flotilla()
     {
         return $this->belongsTo(Flotilla::class);
     }
 
-    /**
-     * Driver → Entregas ejecutadas
-     */
     public function entregas()
     {
         return $this->hasMany(Entrega::class, 'driver_id');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Jerarquía de usuarios (auto-relación)
-    |--------------------------------------------------------------------------
-    */
-
-    /**
-     * Usuario que lo creó o supervisa
-     */
     public function parent()
     {
         return $this->belongsTo(User::class, 'parent_id');
     }
 
-    /**
-     * Usuarios creados o supervisados por este usuario
-     */
     public function children()
     {
         return $this->hasMany(User::class, 'parent_id');
@@ -102,59 +82,58 @@ class User extends Authenticatable
 
     /*
     |--------------------------------------------------------------------------
-    | Helpers de rol (REGLAS DE NEGOCIO)
+    | Helpers de Rol
     |--------------------------------------------------------------------------
     */
 
+    public function hasRole(UserRole $role): bool
+    {
+        return $this->rol === $role;
+    }
+
     public function isSuperAdmin(): bool
     {
-        return $this->rol === 'super_admin';
+        return $this->hasRole(UserRole::SUPER_ADMIN);
     }
 
     public function isAdminCliente(): bool
     {
-        return $this->rol === 'admin_cliente';
+        return $this->hasRole(UserRole::ADMIN_CLIENTE);
     }
 
     public function isDespachador(): bool
     {
-        return $this->rol === 'despachador';
+        return $this->hasRole(UserRole::DESPACHADOR);
     }
 
     public function isDriver(): bool
     {
-        return $this->rol === 'driver';
+        return $this->hasRole(UserRole::DRIVER);
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Scopes útiles
+    | Scopes
     |--------------------------------------------------------------------------
     */
 
     public function scopeDrivers($query)
     {
-        return $query->where('rol', 'driver');
+        return $query->where('rol', UserRole::DRIVER);
     }
 
     public function scopeDespachadores($query)
     {
-        return $query->where('rol', 'despachador');
+        return $query->where('rol', UserRole::DESPACHADOR);
     }
 
     public function scopeAdminsCliente($query)
     {
-        return $query->where('rol', 'admin_cliente');
+        return $query->where('rol', UserRole::ADMIN_CLIENTE);
     }
 
     public function scopeActivos($query)
     {
         return $query->where('activo', true);
     }
-
-    public function isDispatcher(): bool
-    {
-        return $this->role === 'dispatcher';
-    }
-
 }
