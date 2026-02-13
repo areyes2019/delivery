@@ -17,6 +17,30 @@
   </script>
 </head>
 <body>
-  <div id="app"></div>
+  <body>
+  <div style="position:fixed; top:20px; right:20px; z-index:999;">
+    <form method="POST" action="{{ route('logout') }}">
+      @csrf
+      <button type="submit" 
+        style="
+          background:#000;
+          color:#FFD700;
+          border:none;
+          padding:10px 16px;
+          border-radius:8px;
+          font-weight:bold;
+          cursor:pointer;
+        ">
+        Cerrar sesión
+      </button>
+    </form>
+  </div>
+
+  <div id=""></div>
+</body>
+
+  <div id="">
+    
+  </div>
 </body>
 </html>

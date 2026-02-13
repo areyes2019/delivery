@@ -9,6 +9,11 @@ use App\Http\Controllers\Web\DashboardController;
 use Illuminate\Support\Facades\Auth;
 use App\Events\ClientRequestAccepted;
 use App\Models\ClientRequest;
+
+Route::get('/test-session', function () {
+    session(['ok' => 'si guarda']);
+    return session('ok');
+});
 /*
 |--------------------------------------------------------------------------
 | ROOT
