@@ -4,10 +4,6 @@
   <meta charset="UTF-8">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>Dashboard</title>
-  
-  <script>
-    window.AUTH_USER = @json(auth()->user());
-  </script>
 
   @vite(['resources/js/app.js'])
 
@@ -35,12 +31,8 @@
       </button>
     </form>
   </div>
-
-  <div id=""></div>
 </body>
 
-  <div id="">
-    
-  </div>
+  <div id="app"></div>
 </body>
 </html>

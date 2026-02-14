@@ -18,9 +18,10 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email'    => 'required|email',
+            'email' => 'required|email',
             'password' => 'required',
         ]);
+
         if (!Auth::attempt($credentials)) {
             return back()->withErrors([
                 'email' => 'Credenciales incorrectas',
@@ -28,22 +29,28 @@ class LoginController extends Controller
         }
 
         $request->session()->regenerate();
-        $user = $request->user();
-        // 🔐 Solo ciertos roles pueden entrar
-        if (!in_array($user->rol, [
-            UserRole::DESPACHADOR,
-            UserRole::ADMIN_CLIENTE,
-            UserRole::SUPER_ADMIN,
-            UserRole::DRIVER,
-            ])) {
-            Auth::logout();
-            return back()->withErrors([
-                'email' => 'No tienes acceso al dashboard',
-            ]);
+
+        $user = $request->user(); // ✔ perfectamente válido
+
+        if ($user->isSuperAdmin() || $user->isAdminCliente()) {
+            return redirect()->route('dashboard.admin');
         }
-        
-        return redirect('/dashboard');
+
+        if ($user->isDespachador()) {
+            return redirect()->route('dashboard.despachador');
+        }
+
+        if ($user->isDriver()) {
+            return redirect()->route('dashboard.driver');
+        }
+
+        Auth::logout();
+
+        return back()->withErrors([
+            'email' => 'No tienes acceso autorizado.',
+        ]);
     }
+
 
     public function logout(Request $request)
     {

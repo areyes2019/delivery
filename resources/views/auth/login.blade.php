@@ -1,66 +1,101 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Login - Delivery</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .login-box {
-            background: #fff;
-            padding: 30px;
-            width: 320px;
-            border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0,0,0,.1);
-        }
-        h2 {
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-        }
-        button {
-            width: 100%;
-            padding: 10px;
-            background: #2563eb;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        .error {
-            color: red;
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delivery Celaya · Iniciar sesión</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- Fuente Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  @vite(['resources/css/dashboard.css'])
 </head>
-<body>
 
-<div class="login-box">
-    <h2>Delivery Celaya</h2>
+<body class="login-body">
 
-    @if ($errors->any())
-        <div class="error">{{ $errors->first() }}</div>
-    @endif
+  <div class="main-card">
 
-    <form method="POST" action="/login">
+    <!-- LADO IZQUIERDO -->
+    <div class="left-panel">
+      <div class="left-overlay"></div>
+
+      <div class="vehicle-grid">
+        <div class="vehicle-item">
+          <i class="bi bi-car-front-fill"></i>
+          Sedán
+        </div>
+
+        <div class="vehicle-item">
+          <i class="bi bi-bicycle"></i>
+          Moto
+        </div>
+
+        <div class="vehicle-item">
+          <i class="bi bi-taxi-front-fill"></i>
+          Taxi
+        </div>
+
+        <div class="vehicle-item">
+          <i class="bi bi-scooter"></i>
+          Scooter
+        </div>
+      </div>
+    </div>
+
+    <!-- LADO DERECHO -->
+    <div class="right-panel">
+      <h2>Bienvenido a Delivery Celaya</h2>
+      <p>
+        Inicia sesión para acceder al centro de control y gestionar tu flotilla.
+      </p>
+
+      <form method="POST" action="{{ route('login') }}" class="login-form">
         @csrf
 
-        <input type="email" name="email" placeholder="Correo" required>
-        <input type="password" name="password" placeholder="Contraseña" required>
+        @if ($errors->any())
+          <div class="error-message">
+            {{ $errors->first() }}
+          </div>
+        @endif
 
-        <button type="submit">Entrar</button>
-    </form>
-</div>
+        <div class="mb-3">
+          <input 
+            type="email" 
+            name="email" 
+            class="form-control" 
+            placeholder="Correo electrónico"
+            value="{{ old('email') }}"
+            required>
+        </div>
+
+        <div class="mb-3">
+          <input 
+            type="password" 
+            name="password" 
+            class="form-control" 
+            placeholder="Contraseña"
+            required>
+        </div>
+
+        <button type="submit" class="btn btn-login w-100">
+          Ingresar al sistema
+        </button>
+      </form>
+
+      <div class="footer-note">
+        Sistema interno de gestión · Delivery Celaya
+      </div>
+    </div>
+
+  </div>
 
 </body>
 </html>

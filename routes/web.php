@@ -10,10 +10,6 @@ use Illuminate\Support\Facades\Auth;
 use App\Events\ClientRequestAccepted;
 use App\Models\ClientRequest;
 
-Route::get('/test-session', function () {
-    session(['ok' => 'si guarda']);
-    return session('ok');
-});
 /*
 |--------------------------------------------------------------------------
 | ROOT
@@ -47,9 +43,16 @@ Route::post('/logout', [LoginController::class, 'logout'])
 | DASHBOARD WEB
 |--------------------------------------------------------------------------
 */
-Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index']);
+Route::middleware(['auth'])->group(function () {
+
+    Route::get('/dashboard/admin', [DashboardController::class, 'admin'])
+        ->name('dashboard.admin');
+
+    Route::get('/dashboard/despachador', [DashboardController::class, 'despachador'])
+        ->name('dashboard.despachador');
+
 });
+
 
 /*
 |--------------------------------------------------------------------------
