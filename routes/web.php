@@ -48,10 +48,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/admin', [DashboardController::class, 'admin'])
         ->name('dashboard.admin');
 
-    Route::get('/dashboard/despachador', [DashboardController::class, 'despachador'])
-        ->name('dashboard.despachador');
+    Route::get('/dashboard/admin/flotillas', function () {
+        return view('dashboard.flotillas');
+    })->name('admin.flotillas');
 
 });
+
 
 
 /*

@@ -5,14 +5,15 @@ import Pusher from 'pusher-js'
 import { createApp } from 'vue'
 
 // Bootstrap
+import * as bootstrap from 'bootstrap'
 import 'bootstrap/dist/css/bootstrap.min.css'
-import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import 'bootstrap-icons/font/bootstrap-icons.css'
 
 import DashboardLayout from './components/dashboard/DashboardLayout.vue'
 
 // 🌐 Axios global
 window.axios = axios
+window.bootstrap = bootstrap
 axios.defaults.baseURL = '/api'
 axios.defaults.withCredentials = true
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
